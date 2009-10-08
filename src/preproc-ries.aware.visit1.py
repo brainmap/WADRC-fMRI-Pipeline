@@ -99,10 +99,10 @@ if (len(sys.argv) == 1):
 else: args = sys.argv
 
 (options, args) = makeOptionsParser().parse_args(args)
-
-if (len(args) != 1):
+print args
+if (len(args) != 2):
     parser.error("Incorrect number of arguments, subject ID missing.")
-subid = args[0]
+subid = args[1]
 
 
 # retrieves a dictionary of subject specific visit variables from the csv file
