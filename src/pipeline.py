@@ -356,16 +356,23 @@ class Pipeline(object):
 			outfiles = [ os.path.join(self.working_preprocdir, "a" + f[:-10] + ".nii") for f in os.listdir(self.working_preprocdir) if f.endswith(".HEAD") ]
 			for infile, outfile in zip(infiles, outfiles):
 				if not os.path.exists(outfile):
-					shift_cmd = "3dTshift -tzero 0 -prefix %s %s" % (outfile, infile)
+					shift_cmd = "slicetimer -i " + infile + " -o " + outfile + "--down "
+					#shift_cmd = "3dTshift -tzero 0 -prefix %s %s" % (outfile, infile)
 					self.run(shift_cmd)
 		elif functional_format == 'dicoms':
 			infiles = [os.path.splitext(f)[0] for f in os.listdir(self.working_preprocdir) if f.endswith("nii")] # Get the file prefixes for nifti files.
 			outfiles =  ["a"+os.path.splitext(f)[0] for f in os.listdir(self.working_preprocdir) if f.endswith("nii")] # Get the file prefixes for nifti files.
 			for infile, outfile in zip(infiles, outfiles):
 				print infile, outfile
-				shift_cmd = "3dTshift -tzero 0 -prefix %s.nii %s.nii" % (os.path.join(self.working_preprocdir, outfile), os.path.join(self.working_preprocdir, infile))
+				shift_cmd = "slicetimer -i " + os.path.join(self.working_preprocdir, infile) + " -o " + os.path.join(self.working_preprocdir, outfile) + " --down"
 				print os.path.join(self.working_preprocdir, infile), os.path.join(self.working_preprocdir, outfile)
 				self.run(shift_cmd)
+				
+				# FSL does all its native computations in float, which is also the default output type.
+				# Float is needlessly twice as big as INT16 (aka short) so we are changing the filetype back to save space.
+				change_datatype_cmd = "fslmaths " + outfile + " " + outfile + " -odt short"
+				self.run(change_datatype_cmd)
+				
 		else: raise ValueError, "Unrecognized dicom format."
 		
 		self.step_files['stc'] = set( os.listdir(self.working_preprocdir) ) - files_before_this_step
