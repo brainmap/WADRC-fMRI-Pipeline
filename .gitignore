@@ -1,1 +1,2 @@
-data/preprocessed/awr019 data/raw/awr019_8941_09252009
+data/**/* 
+*.pyc
