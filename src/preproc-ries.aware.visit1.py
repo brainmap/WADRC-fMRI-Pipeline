@@ -93,11 +93,16 @@ def makeOptionsParser():
 		default=False, help="Run Recon, stc, realign, motioncheck, calcderiv, fieldmap, norm, move files and stats.")
 	return parser
 
-(options, args) = makeOptionsParser().parse_args()
+# Arguments for Debugging
+if (len(sys.argv) == 1):
+	args = ["awr019", "--all", "--freshstart"]
+else: args = sys.argv
 
-if (len(args) != 1):
+(options, args) = makeOptionsParser().parse_args(args)
+print args
+if (len(args) != 2):
     parser.error("Incorrect number of arguments, subject ID missing.")
-subid = args[0]
+subid = args[1]
 
 
 # retrieves a dictionary of subject specific visit variables from the csv file

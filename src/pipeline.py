@@ -42,6 +42,7 @@ class Pipeline(object):
 
 		self.working_preprocdir = os.path.abspath(os.path.join('/Data/tmp', self.subid ) )
 		self.working_rawdir = os.path.join(self.working_preprocdir, 'dicoms')
+		self.working_anatdir = os.path.join(self.working_rawdir, 'raw')
 
 		self.fmapdir = None
 		self.logfile = os.path.join(self.preprocdir, subid + '_pipeline.log')
@@ -87,7 +88,7 @@ class Pipeline(object):
 
 		if not os.path.isdir(self.preprocdir):
 			raise IOError("ERROR: preproc directory given does not exist.")
-		if not os.path.isdir(self.statsdir):
+		if self.statsdir and not os.path.isdir(self.statsdir):
 			raise IOError("ERROR: stats directory given does not exist.")
 
 		self.step_files['init'] = set( os.listdir(self.working_preprocdir) )
@@ -174,13 +175,13 @@ class Pipeline(object):
 		if not outputFile: outputFile = image
 
 		numberToRemove = int(numberToRemove)
-		p1 = subprocess.Popen(["avwinfo", image], stdout=subprocess.PIPE)
+		p1 = subprocess.Popen(["fslinfo", image], stdout=subprocess.PIPE)
 		p2 = subprocess.Popen(["grep","dim4"], stdin = p1.stdout, stdout = subprocess.PIPE)
 		output = p2.communicate()[0]
 		totalReps = int(output.strip().split()[1])
 		print "Current Reps: " + str(totalReps)
 		repSize = totalReps - numberToRemove
-		cmd = "avwroi " + image + " " + outputFile + " " + str(numberToRemove) + " " + str(repSize) # avwroi is 0-indexed.
+		cmd = "fslroi " + image + " " + outputFile + " " + str(numberToRemove) + " " + str(repSize) # fslroi is 0-indexed.
 		print cmd
 		os.system(cmd)
 					
@@ -221,7 +222,7 @@ class Pipeline(object):
 
 		files_to_check = []
 		for pfile in pfile_order:
-			files_to_check.append(os.path.join(self.rawdir, pfile))
+			files_to_check.append(os.path.join(self.working_anatdir, pfile))
 		if refdat_order:
 			for refdatfile in refdat_order:
 				refdatpath = os.path.join(self.rawdir, refdatfile)
@@ -252,11 +253,15 @@ class Pipeline(object):
 		shutil.rmtree(temp_dir)
 
 	## Find a ref.dat file. This involves several simple heuristics.
-	def findRefDatFile(self, study_name):
+	def findRefDatFile(self, study_name, search_directory = None):
+		if not search_directory:
+			search_directory = self.working_anatdir
+			
 		# Find an appropriate ref.dat file. First we look for some specific name patterns.
-		possibilities = [os.path.join(self.rawdir, "ref.dat"),
-						 os.path.join(self.rawdir, "ref.dat." + study_name + self.subid[1:]),
-						 os.path.join(self.rawdir, "ref.dat." + self.subid)]
+		possibilities = [os.path.join(search_directory, "ref.dat"),
+						 os.path.join(search_directory, "ref.dat." + study_name + '.' + self.subid[1:]),
+						 os.path.join(search_directory, "ref.dat." + self.subid),
+		                                 os.path.join(search_directory, "ref.dat." + study_name + '.' + self.subid),]
 		refdatfile = None
 
 		for f in possibilities:
@@ -269,11 +274,11 @@ class Pipeline(object):
 		#  "ref.dat". If there is more than one and nothing was passed in,
 		#  the situation is ambiguous, and we'll raise an error
 		if not refdatfile:
-			refdatfile = [ f for f in os.listdir(self.rawdir) if f.startswith("ref.dat") ]
+			refdatfile = [ f for f in os.listdir(search_directory) if f.startswith("ref.dat") ]
 			if len(refdatfile) != 1:
 				raise "Couldn't find an appropriate ref.dat file in " + self.rawdir
 			else:
-				refdatfile = os.path.abspath( os.path.join(self.rawdir, refdatfile[0]) )
+				refdatfile = os.path.abspath( os.path.join(search_directory, refdatfile[0]) )
 
 		return refdatfile
 
@@ -281,14 +286,14 @@ class Pipeline(object):
 		"""Reconstructs a single pfile into the epirecon default brik/head when
 		given a temporary working directory, path to the pfile and the task to
 		use when naming the output."""
-		raw_pfile = os.path.join(self.rawdir, pfile)
+		raw_pfile = os.path.join(self.working_anatdir, pfile)
 		tmp_pfile = os.path.join(temp_dir, pfile)
 		os.symlink( raw_pfile, tmp_pfile )
 
 		## Finds an appropriate ref.dat file if one wasn't passed in;
 		#  raises an exception if not found
 		if refdatfile:
-			refdatfile = os.path.join(self.rawdir, refdatfile)
+			refdatfile = os.path.join(self.working_anatdir, refdatfile)
 		else:
 			refdatfile = self.findRefDatFile(study_name)
 
@@ -297,7 +302,7 @@ class Pipeline(object):
 		tmp_refdatfile = os.path.join(temp_dir, "ref.dat")
 		os.symlink(refdatfile, tmp_refdatfile)
 
-		self.log("### Reconstructing task: %s using Pfile: %s and refdat file %s ###" % (task, tmp_pfile, refdatfile))
+		self.log("### Reconstructing task: %s using Pfile: %s and refdat file %s ###" % (task, tmp_pfile, tmp_refdatfile))
 		epirecon_cmd_tplt = "epirecon_ex -f %s -skip 3 -NAME %s_%s -scltype=0"
 		epirecon_cmd = epirecon_cmd_tplt % (tmp_pfile, self.subid, task)
 		returncode = self.run(epirecon_cmd)
@@ -352,16 +357,23 @@ class Pipeline(object):
 			outfiles = [ os.path.join(self.working_preprocdir, "a" + f[:-10] + ".nii") for f in os.listdir(self.working_preprocdir) if f.endswith(".HEAD") ]
 			for infile, outfile in zip(infiles, outfiles):
 				if not os.path.exists(outfile):
-					shift_cmd = "3dTshift -tzero 0 -prefix %s %s" % (outfile, infile)
+					shift_cmd = "slicetimer -i " + infile + " -o " + outfile + "--down "
+					#shift_cmd = "3dTshift -tzero 0 -prefix %s %s" % (outfile, infile)
 					self.run(shift_cmd)
 		elif functional_format == 'dicoms':
 			infiles = [os.path.splitext(f)[0] for f in os.listdir(self.working_preprocdir) if f.endswith("nii")] # Get the file prefixes for nifti files.
 			outfiles =  ["a"+os.path.splitext(f)[0] for f in os.listdir(self.working_preprocdir) if f.endswith("nii")] # Get the file prefixes for nifti files.
 			for infile, outfile in zip(infiles, outfiles):
 				print infile, outfile
-				shift_cmd = "3dTshift -tzero 0 -prefix %s.nii %s.nii" % (os.path.join(self.working_preprocdir, outfile), os.path.join(self.working_preprocdir, infile))
+				shift_cmd = "slicetimer -i " + os.path.join(self.working_preprocdir, infile) + " -o " + os.path.join(self.working_preprocdir, outfile) + " --down"
 				print os.path.join(self.working_preprocdir, infile), os.path.join(self.working_preprocdir, outfile)
 				self.run(shift_cmd)
+				
+				# FSL does all its native computations in float, which is also the default output type.
+				# Float is needlessly twice as big as INT16 (aka short) so we are changing the filetype back to save space.
+				change_datatype_cmd = "fslmaths " + outfile + " " + outfile + " -odt short"
+				self.run(change_datatype_cmd)
+				
 		else: raise ValueError, "Unrecognized dicom format."
 		
 		self.step_files['stc'] = set( os.listdir(self.working_preprocdir) ) - files_before_this_step
@@ -448,8 +460,12 @@ class Pipeline(object):
 					files_to_move.add(file)
 
 		for file in files_to_move:
-			print "Moving " + file + " to " + self.preprocdir
-			shutil.move(file, self.preprocdir)
+			try:
+				print "Moving " + file + " to " + self.preprocdir
+				shutil.move(file, self.preprocdir)
+			except shutil.Error as err:
+				print "Could not move " + file + " because destination already exists."
+				print err
 
 	## Run the stats step
 	def stats1L(self, statsjob):
