@@ -29,9 +29,15 @@ class SPMJob(object):
     jobFile = None
     identity = None
     
-    def __init__(self, jobFile, identity):
+    def __init__(self, jobFile, identity, spm_version = 'spm5'):
         self.jobFile = jobFile
         self.identity = identity
+        if spm_version == 'spm5':
+            self.spm_batch_struct = 'jobs'
+        elif spm_version == 'spm8':
+            self.spm_batch_struct = 'matlabbatch'
+        else:
+            raise(Exception, "Unrecognized spm_version, should be either 'spm5' or 'spm8'")
 
     def __str__(self):
         return "%s\n%s\n%s" % (repr(self), self.jobFile, self.identity)
@@ -42,12 +48,12 @@ class SPMJob(object):
 
     ## Returns a matlab command that walks the jobfile and replaces all
     # occurences of a string with a new one.
-    def replace_cmd(self, old, new):
-        return "jobs=StructStrRep(jobs, '%s', '%s')" % (old, new)
+    def replace_cmd(self, old, new, matlabstruct = 'jobs'):
+        return "%s=StructStrRep(%s, '%s', '%s')" % (self.spm_batch_struct, self.spm_batch_struct, old, new)
 
     ## Returns a matlab command that saves self's jobfile.
     def save_cmd(self):
-        return "save '%s' 'jobs'" % self.jobFile
+        return "save '%s' '%s'" % (self.jobFile, self.spm_batch_struct)
 
     ## Returns an exit command for matlab.        
     def exit_cmd(self):
@@ -55,7 +61,7 @@ class SPMJob(object):
 
     ## Wraps the matlab queue in an executable os call.
     def wrap_matlab_cmds(self):
-        return "matlab7 -nojvm -nosplash -r \"%s\"" % (';'.join(self.mlQ))
+        return "matlab7 -nodesktop -nosplash -r \"%s\"" % ('; '.join(self.mlQ))
         
     ##Replaces all elements of the current identity with a new identity.
     #

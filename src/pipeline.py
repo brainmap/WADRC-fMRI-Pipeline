@@ -45,6 +45,12 @@ class Pipeline(object):
 
 		self.fmapdir = None
 		self.logfile = os.path.join(self.preprocdir, subid + '_pipeline.log')
+		
+		# Create a dict for misc. program configuration variables.
+		self.config = {}
+		
+		# Default to SPM5 at __init__
+		self.config['spm_version'] = 'spm5'
 
 		## Not yet used, but can be used in the future to track what files are
 		# produced at what steps.
@@ -69,12 +75,19 @@ class Pipeline(object):
 	## Auxiliary function, used in assembling MatLab commands, which are then run by
 	# another piece of code.
 	def runMatlab(self, arg):
-		return 'matlab7 -nodesktop -nosplash -r "addpath /apps/spm/spm5_current; %s; exit"' % (arg, )
+		return 'matlab7 -nodesktop -nosplash -r "addpath %s; %s; exit"' % (self.spm_path(), arg, )
 	## Auxiliary function, used in assembling SPM commands, which are then run by
 	# another piece of code.
 	def runSPMJob(self, arg):
 		return self.runMatlab("spm_jobman('run_nogui','%s')" % (arg, ))
-
+	## Auxiliary function, used to provide SPM path from setting or config.
+	def spm_path(self):
+		if 'spm_path' in self.config: 
+			spm_path = self.config['spm_path']
+		else:
+			spm_path = "/apps/spm/%s_current" % self.config['spm_version']
+		return spm_path
+			
 
 	## Checks for proper directory setup.  Raw, preproc, and stats directories
 	# must exist before running this pipeline.

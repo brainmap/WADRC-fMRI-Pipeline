@@ -39,6 +39,8 @@ class StudyVariables(object):
 	realignJob = os.path.join(studyTemplatesDir, realignJobFile)
 	normJob = os.path.join(studyTemplatesDir, normJobFile)
 	statsJob = os.path.join(studyTemplatesDir, statsJobFile)
+	
+	spm_version = 'spm5' # SPM5 is used by default.  To switch to SPM8, use 'spm8'
 ######################### DO NOT EDIT BELOW THIS LINE #########################
 
 
@@ -141,6 +143,7 @@ for path in [subjPreprocDir, subjStatsDir]:
 
 # make a pipe, run it.
 pipe = Pipeline(subid, subjRawDir, subjAnatDir, subjPreprocDir, subjStatsDir)
+if StudyVariables.spm_version: pipe.config['spm_version'] = StudyVariables.spm_version
 pipe.checkSetup()
 
 subjRealignJob = os.path.join(pipe.working_preprocdir, subid+'_realign.mat')
@@ -200,7 +203,7 @@ if not os.path.exists(subjRealignJob) and StudyVariables.realignJob:
         StudyVariables.realignTemplateRuns,
         fieldmap=StudyVariables.realignTemplateFM
     )
-    realign_job = SPMJob(subjRealignJob, realign_template_identity)
+    realign_job = SPMJob(subjRealignJob, realign_template_identity, pipe.config['spm_version'])
     print "Replacing Realign SPM Identity in subject job "; print realign_job
     realign_job.replaceIdentity(subj_preproc_identity)
 
@@ -214,7 +217,7 @@ if not os.path.exists(subjNormJob) and StudyVariables.normJob:
         StudyVariables.normTemplateRuns,
         fieldmap=StudyVariables.normTemplateFM
     )
-    norm_job = SPMJob(subjNormJob, norm_template_identity)
+    norm_job = SPMJob(subjNormJob, norm_template_identity, pipe.config['spm_version'])
     print "Replacing Norm SPM Identity in subject job "; print norm_job
     norm_job.replaceIdentity(subj_preproc_identity)
 
@@ -230,7 +233,7 @@ if not os.path.exists(subjStatsJob) and StudyVariables.statsJob:
         StudyVariables.statsTemplateRuns,
         fieldmap=StudyVariables.statsTemplateFM
     )
-    stats_job = SPMJob(subjStatsJob, stats_template_identity)
+    stats_job = SPMJob(subjStatsJob, stats_template_identity, pipe.config['spm_version'])
     print "Replacing Stats SPM Identity in subject job "; print stats_job
     stats_job.replaceIdentity(subj_stats_identity)
 
