@@ -76,7 +76,7 @@ class Pipeline(object):
 	## Auxiliary function, used in assembling MatLab commands, which are then run by
 	# another piece of code.
 	def runMatlab(self, arg):
-		return 'matlab7 -nodesktop -nosplash -r "addpath %s; %s; exit"' % (self.spm_path(), arg, )
+		return 'matlab7 -nodesktop -nosplash -r "addpath(genpath(\'%s\')); %s; exit"' % (self.spm_path(), arg )
 	## Auxiliary function, used in assembling SPM commands, which are then run by
 	# another piece of code.
 	def runSPMJob(self, arg):
