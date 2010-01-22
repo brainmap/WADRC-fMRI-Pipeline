@@ -37,7 +37,7 @@ class SPMJob(object):
         elif spm_version == 'spm8':
             self.spm_batch_struct = 'matlabbatch'
         else:
-            raise(Exception, "Unrecognized spm_version, should be either 'spm5' or 'spm8'")
+            raise Exception("Unrecognized spm_version, should be either 'spm5' or 'spm8'")
 
     def __str__(self):
         return "%s\n%s\n%s" % (repr(self), self.jobFile, self.identity)
