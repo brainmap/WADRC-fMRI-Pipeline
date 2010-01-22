@@ -7,6 +7,7 @@ os.environ["FSLOUTPUTTYPE"]="NIFTI"
 class Pipeline(object):
 	DCM2NII_PATH='/apps/mricron/dcm2nii '  # Used for dicom > nii file conversion.
 	TO3D_PATH='to3d '
+	FSLPATH = '/apps/fsl_dists/fsl-3.3.11_64/bin/'
 
 	## Each of these indicates one step in the pipeline process.
 	STEPS = [
@@ -183,7 +184,7 @@ class Pipeline(object):
 	def remove_discdacqs(self, image, numberToRemove, outputFile = False):
 		print "++++++ Removing " + str(numberToRemove) + " Discarded Acquistions from " + image + " ++++++"
 		image = os.path.abspath(image)
-		if not os.path.exists(image): raise(IOError,"Image does not exist.")
+		if not os.path.exists(image): raise IOError("Image does not exist.")
 		if not outputFile: outputFile = image
 
 		numberToRemove = int(numberToRemove)
