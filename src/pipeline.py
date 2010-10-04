@@ -82,6 +82,8 @@ class Pipeline(object):
 	def runSPMJob(self, arg):
 		return self.runMatlab("spm_jobman('run_nogui','%s')" % (arg, ))
 	## Auxiliary function, used to provide SPM path from setting or config.
+	# Note that if the path is hardcoded in any old-school SPM jobs,
+	# their paths will need to be changed as well.
 	def spm_path(self):
 		if 'spm_path' in self.config: 
 			spm_path = self.config['spm_path']
@@ -90,9 +92,9 @@ class Pipeline(object):
 			if os_type == "Darwin":
 				spm_path = '/Applications/spm/%s/%s_current' % (self.config['spm_version'], self.config['spm_version'])
 			else:
-				if os_type != "Linux":
+				if os_type <> "Linux":
 					print "Warning: OS Type %s was not recognized; you probably won't be able to find SPM's application files."
-					spm_path = "/apps/spm/%s_current" % self.config['spm_version']
+				spm_path = "/apps/spm/%s_current" % self.config['spm_version']
 		return spm_path
 			
 
