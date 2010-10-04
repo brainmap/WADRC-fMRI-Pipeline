@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from optparse import OptionParser
-import tempfile, shutil, os, tempfile, subprocess, sys, re
+import tempfile, shutil, os, tempfile, subprocess, sys, re, platform
 os.environ["FSLOUTPUTTYPE"]="NIFTI"
 
 class Pipeline(object):
@@ -86,7 +86,13 @@ class Pipeline(object):
 		if 'spm_path' in self.config: 
 			spm_path = self.config['spm_path']
 		else:
-			spm_path = "/apps/spm/%s_current" % self.config['spm_version']
+			os_type = platform.system()
+			if os_type == "Darwin":
+				spm_path = '/Applications/spm/%s/%s_current' % (self.config['spm_version'], self.config['spm_version'])
+			else:
+				if os_type != "Linux":
+					print "Warning: OS Type %s was not recognized; you probably won't be able to find SPM's application files."
+					spm_path = "/apps/spm/%s_current" % self.config['spm_version']
 		return spm_path
 			
 
