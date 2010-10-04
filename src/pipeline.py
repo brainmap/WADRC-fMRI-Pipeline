@@ -111,9 +111,9 @@ class Pipeline(object):
 		## Create a new working directory at initialization to do processing as locally as possible.
 		# In Development - Use a "constant" temp directory.
 
-		if not os.path.isdir(self.working_preprocdir): os.mkdir(self.working_preprocdir)
+		# if not os.path.isdir(self.working_preprocdir): os.mkdir(self.working_preprocdir)
 		# In Production - Use a real temp directory.
-		#self.working_preprocdir = os.path.abspath( tempfile.mkdtemp(dir = '/tmp') )
+		self.working_preprocdir = os.path.abspath( tempfile.mkdtemp(dir = '/tmp') )
 		
 		# Store the local copy of unzipped raw files in a "dicoms" folder inside the working preproc directory.
 

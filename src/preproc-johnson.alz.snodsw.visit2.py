@@ -96,12 +96,12 @@ def makeOptionsParser():
 
 if (len(sys.argv) == 1):
 	args = ["alz010_2", "--all", "--freshstart"]
-else: args = sys.argv
+else: args = sys.argv[1:]
 
 (options, args) = makeOptionsParser().parse_args(args)
-
+print options, args
 if (len(args) != 1):
-    parser.error("Incorrect number of arguments, subject ID missing.")
+    parser.error("Can't find subject ID.")
 subid = args[0]
 
 
