@@ -90,7 +90,7 @@ def makeOptionsParser():
     parser.add_option("--wrapper",default="RiesAwareVisit1")
     parser.add_option("--all",action="store_true",dest="all",
         default=False, help="Run Recon, stc, realign, motioncheck, calcderiv, fieldmap, norm, move files and stats.")
-    parser.add_option("--working-dir",dest="workingdir",help="Temporary local working directory.",metavar="DIR")
+    parser.add_option("--working-dir",dest="workingdir",help="Temporary local working directory.",metavar="DIR", default=False)
     return parser
 
 (options, args) = makeOptionsParser().parse_args()
@@ -125,7 +125,8 @@ if options.fresh:
     # if os.path.exists(subjStatsDir): shutil.rmtree(subjStatsDir)
 
 if options.all:
-    for option in options.__dict__: options.__dict__[option] = True
+    for option in options.__dict__: 
+      if option != 'workingdir': options.__dict__[option] = True 
     options.stats = False
 
 # Check Write Permissions in Subject Paths
@@ -137,6 +138,7 @@ for path in [subjPreprocDir]:
 
 
 # make a pipe, run it.
+print options.workingdir
 pipe = Pipeline(subid, subjRawDir, subjAnatDir, subjPreprocDir, subjStatsDir, options.workingdir)
 pipe.checkSetup()
 
