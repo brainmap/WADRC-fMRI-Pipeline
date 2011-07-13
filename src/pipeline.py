@@ -28,7 +28,7 @@ class Pipeline(object):
 	# and an empty file of that name will be created in the preproc directory.
 	FLAGS = dict( zip(STEPS, FLAGNAMES) )
 
-	def __init__(self, subid, rawdir, anatdir, preprocdir, statsdir):
+	def __init__(self, subid, rawdir, anatdir, preprocdir, statsdir, working_preprocdir = None):
 		## Subject id.
 		self.subid = subid
 		## Raw directory, holding initial primary data files.
@@ -40,7 +40,10 @@ class Pipeline(object):
 		## Directory in which stats1 processing is done.
 		self.statsdir = statsdir
 
-		self.working_preprocdir = os.path.abspath(os.path.join('/Data/tmp', self.subid ) )
+		if not working_preprocdir:
+			working_preprocdir = os.path.abspath( tempfile.mkdtemp(dir = '/tmp') )
+		
+		self.working_preprocdir = working_preprocdir
 		self.working_rawdir = os.path.join(self.working_preprocdir, 'dicoms')
 		self.working_anatdir = os.path.join(self.working_rawdir, 'raw')
 
@@ -117,11 +120,7 @@ class Pipeline(object):
 	## Copies and unzips raw files to a faster local working directory. 
 	def prepareLocalCopy(self):
 		## Create a new working directory at initialization to do processing as locally as possible.
-		# In Development - Use a "constant" temp directory.
-
-		# if not os.path.isdir(self.working_preprocdir): os.mkdir(self.working_preprocdir)
-		# In Production - Use a real temp directory.
-		self.working_preprocdir = os.path.abspath( tempfile.mkdtemp(dir = '/tmp') )
+		if not os.path.isdir(self.working_preprocdir): os.mkdir(self.working_preprocdir)
 		
 		# Store the local copy of unzipped raw files in a "dicoms" folder inside the working preproc directory.
 

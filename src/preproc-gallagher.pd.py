@@ -53,7 +53,7 @@ preproc-wrap140.visit1.py <subject ID> [pipe options]
 import sys
 import shutil
 import glob
-sys.path.append('/Data/home/erik/NetBeansProjects/PythonPipeline/src')
+# sys.path.append('/Data/home/erik/NetBeansProjects/PythonPipeline/src')
 sys.path.append('/Data/vtrak1/SysAdmin/production/python')
 from optparse import OptionParser
 #from greccparsers import subject_parse
@@ -90,6 +90,7 @@ def makeOptionsParser():
     parser.add_option("--wrapper",default="RiesAwareVisit1")
     parser.add_option("--all",action="store_true",dest="all",
         default=False, help="Run Recon, stc, realign, motioncheck, calcderiv, fieldmap, norm, move files and stats.")
+    parser.add_option("--working-dir",dest="workingdir",help="Temporary local working directory.",metavar="DIR")
     return parser
 
 (options, args) = makeOptionsParser().parse_args()
@@ -136,7 +137,7 @@ for path in [subjPreprocDir]:
 
 
 # make a pipe, run it.
-pipe = Pipeline(subid, subjRawDir, subjAnatDir, subjPreprocDir, subjStatsDir)
+pipe = Pipeline(subid, subjRawDir, subjAnatDir, subjPreprocDir, subjStatsDir, options.workingdir)
 pipe.checkSetup()
 
 subjRealignJob = os.path.join(pipe.working_preprocdir, subid+'_realign.mat')
